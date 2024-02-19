@@ -19,15 +19,15 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
     %AAL_Labels = template_struct.AAL_Labels;
     %all_roi_tissueindex = template_struct.all_roi_tissueindex;
     clear template_struct
-    
+
     % Read in head model
     headmodel = ft_read_headmodel('standard_bem.mat')
-    
+
     % Modify pos value to ensure it doesn't sit in the skull
     for i = 1:3
         headmodel.bnd(i).pos = headmodel.bnd(i).pos * .99;
     end
-    
+
     % Preprocess the EEG data
     cfg               = [];
     cfg.reref         = 'yes';
@@ -43,8 +43,7 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
 
     clear cfg
     clear data_filt
-    
-    
+
     % Get data covariance matrix and timelocked average
     cfg = [];
     cfg.covariance='yes';
@@ -68,7 +67,7 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
 
     clear cfg
     clear sourcemodel
-    
+
     % Get the voxel coordinates closest to coordinates of interest using
     % coordinates from MNI atlas
     cfg                 = [];
@@ -84,23 +83,27 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
 
     % Perform source analysis
     sourceavg=ft_sourceanalysis(cfg, avg);
-    
+
     % Get data from required coordinates
     VEfilt = cat(3,sourceavg.avg.filter{I});
-    
+
     for ik = 1:size(VEfilt,3)
 
         for i = 1:length(data_trial)
-        
+
             VE3 = squeeze(VEfilt(:,:,ik))*data_trial{i};
-    
+
             C = cov(VE3');
             [u,s,v] = svd(C);
             triali(ik,i,:) = u(:,1)'*VE3;
         end
-        
-    
+
     end
+
+    % Split datafile path to create output filename
+    [dir, file, ext] = fileparts(datafile);
+    outputfile = [prefix file ext];
+    outputpath = dir + "/" + outputfile;
 
     % Combine data to save and save to file
     ftdata         = [];
@@ -108,7 +111,7 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
     ftdata.time    = data_time;
     ftdata.trial   = {squeeze(triali)};
     ftdata.label   = {'Frontal'; 'Parietal'};
-    
-    save([prefix datafile],'ftdata')
+
+    save(outputpath,'ftdata')
 
 end
