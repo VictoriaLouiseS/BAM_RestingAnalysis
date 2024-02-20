@@ -68,8 +68,7 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
     clear cfg
     clear sourcemodel
 
-    % Get the voxel coordinates closest to coordinates of interest using
-    % coordinates from MNI atlas
+    % Setup data required for source analysis
     cfg                 = [];
     cfg.method          = 'lcmv';
     cfg.grid            = grid;
@@ -78,13 +77,22 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
     cfg.lcmv.keepfilter = 'yes';
     cfg.channel         = data_label;
 
+    % Frontal and parietal MNI coords
+    coords = [-12 36 60; -24 -66 66];
+    
+    % Get the voxel coordinates closest to coordinates of interest using
+    % MNI coordinates
+    [~,frontal_ind] = min(cdist(grid.pos,coords(1,:)));
+    [~,parietal_ind] = min(cdist(grid.pos,coords(2,:)));
+
     clear grid
     clear headmodel
 
     % Perform source analysis
     sourceavg=ft_sourceanalysis(cfg, avg);
 
-    % Get data from required coordinates
+    % Get data from coordinates of interest
+    I = [frontal_ind parietal_ind];
     VEfilt = cat(3,sourceavg.avg.filter{I});
 
     for ik = 1:size(VEfilt,3)
