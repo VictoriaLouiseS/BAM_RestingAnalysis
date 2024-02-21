@@ -79,7 +79,7 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
 
     % Frontal and parietal MNI coords
     coords = [-12 36 60; -24 -66 66];
-    
+
     % Get the voxel coordinates closest to coordinates of interest using
     % MNI coordinates
     [~,frontal_ind] = min(cdist(grid.pos,coords(1,:)));
@@ -111,7 +111,12 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
     % Split datafile path to create output filename
     [dir, file, ext] = fileparts(datafile);
     outputfile = [prefix file ext];
-    outputpath = dir + "/" + outputfile;
+
+    if dir ~= ""
+        outputpath = dir + "/" + outputfile;
+    else
+        outputpath = outputfile;
+    end
 
     % Combine data to save and save to file
     ftdata         = [];
