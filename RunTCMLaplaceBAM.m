@@ -27,7 +27,7 @@ function RunTCMLaplaceBAM(i)
 %          - n-th order numerical differentiation functions (parallelised)
 %
 %
-% AS2020/21/22 {alexandershaw4[@]gmail.com}
+% AS
 
 % EXAMPLE ONE NODE SETUP:
 %==========================================================================
@@ -134,6 +134,7 @@ for i = i;%1:length(Data.Datasets)
     DCM = atcm.fun.prepcsd(DCM);
     DCM.options.DATA = 1 ;
 
+    % Gaussian kernel smoothing
     for is = 1:2
         for js = 1:2
             DCM.xY.y{:}(:,is,js)  = agauss_smooth(abs(DCM.xY.y{:}(:,is,js)),1);
@@ -143,25 +144,21 @@ for i = i;%1:length(Data.Datasets)
     % Subfunctions and default priors
     %----------------------------------------------------------------------
     DCM = atcm.parameters(DCM,Ns,[p '/newpoints3.mat']);
-
             
     % other model options
     %----------------------------------------------------------------------
-    DCM.M.solvefixed=0;      % oscillations == no fixed point search
-    DCM.M.x = zeros(Ns,8,7);  % init state space: ns x np x nstates
+    DCM.M.solvefixed=0;      
+    DCM.M.x = zeros(Ns,8,7);  
     DCM.M.x(:,:,1)=-70;      % init pop membrane pot [mV]
         
-    load([p '/newpoints3.mat'],'pE','pC')
-
-    %pE = spm_unvec(spm_vec(pE)*0,pE);
     pE=DCM.M.pE;
+    pC=DCM.M.pC;
 
     pC.ID = pC.ID * 0;
     pC.T  = pC.T *0;
     
     pE.J = pE.J-1000;    
     pE.J(1:8) = log([.6 .8 .4 .6 .4 .6 .4 .4]);
-    %pC.ID = pC.ID + 1/8;
     pE.L = 0;
 
     pC.S = pC.S + 1/8;
@@ -171,17 +168,11 @@ for i = i;%1:length(Data.Datasets)
 
     pE.L = [0 0];
     pC.L = [1 1]./8;
-    
-    
-    % Make changes here;
-    %-----------------------------------------------------------
-   
+            
     DCM.M.pE = pE;
     DCM.M.pC = pC;
 
-    % Optimise using AO.m -- a Newton scheme with add-ons and multiple
-    % objective functions built in, including free energy
-    %----------------------------------------------------------------------
+    % store things where functions can find them
     w   = DCM.xY.Hz;
     Y   = DCM.xY.y{:};
     DCM.M.y  = DCM.xY.y;
@@ -189,37 +180,33 @@ for i = i;%1:length(Data.Datasets)
 
     ppE = DCM.M.pE;
     ppC = DCM.M.pC;
+    
 
+    % Search for a fixed point using Newton-Raphson
+    %---------------------------------------------------------------------
     fprintf('--------------- STATE ESTIMATION ---------------\n');
     fprintf('Search for a stable fixed point\n');
 
-    %xx = load([p '/newx.mat']); DCM.M.x = spm_unvec(xx.x,DCM.M.x);
     load('init_14dec','x');
-    %DCM.M.x = spm_unvec(x,DCM.M.x);
-    DCM.M.x = spm_unvec(spm_vec(repmat(x,[1 Ns])'),DCM.M.x)
+    DCM.M.x = spm_unvec(spm_vec(repmat(x,[1 Ns])'),DCM.M.x);
 
     %x = atcm.fun.alexfixed(DCM.M.pE,DCM.M,1e-10);
     load('bam_2node_tcm_fixedpoint','x')
     DCM.M.x = spm_unvec(x,DCM.M.x);
 
     norm(DCM.M.f(DCM.M.x,0,DCM.M.pE,DCM.M))
-
     fprintf('Finished...\n');
           
-    fprintf('--------------- PARAM ESTIMATION ---------------\n');
-    %fprintf('iteration %d\n',j);
-
+    
     % Alex's version of the Levenberg-Marquard routine
+    %---------------------------------------------------------------------
+    fprintf('--------------- PARAM ESTIMATION ---------------\n');
     M = AODCM(DCM);
 
     M.alex_lm;
-
     M.compute_free_energy(M.Ep);
 
-    %DCM.M.nograph = 0;
-    %[Qp,Cp,Eh,F] = spm_nlsi_GN(DCM.M,DCM.xU,DCM.xY);
-
-    % save in DCM structures after optim 
+    % save in DCM structures after fitting, also compute LFPs etc
     %----------------------------------------------------------------------
     DCM.M.pE = ppE;
     DCM.Ep = spm_unvec(M.Ep,DCM.M.pE);
@@ -235,8 +222,6 @@ for i = i;%1:length(Data.Datasets)
     DCM.G = G;
     DCM.series = s;
     
-    %DCM.Cp = atcm.fun.reembedreducedcovariancematrix(DCM,M.CP);
-    %DCM.Cp = makeposdef(DCM.Cp);
     DCM.F  = M.FreeEnergyF;
     DCM.Cp = M.CP;
     save(DCM.name); close all; clear global;
