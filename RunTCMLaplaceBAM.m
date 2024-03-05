@@ -181,8 +181,8 @@ for i = i;%1:length(Data.Datasets)
     pE.L = [0 0];
     pC.L = [1 1]./8;
 
-    NEW = load('SurrogateOptEp','Ep')
-    pE = NEW.Ep;
+    %NEW = load('SurrogateOptEp','Ep')
+    %pE = NEW.Ep;
             
     DCM.M.pE = pE;
     DCM.M.pC = pC;
