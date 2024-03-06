@@ -109,7 +109,7 @@ for i = i;%1:length(Data.Datasets)
     %----------------------------------------------------------------------
     DCM.M.U            = sparse(diag(ones(Ns,1)));  %... ignore [modes]
     DCM.options.trials = tCode;                     %... trial code [GroupDataLocs]
-    DCM.options.Tdcm   = [300 1300];                   %... peristimulus time
+    DCM.options.Tdcm   = [0 2000];                   %... peristimulus time
     DCM.options.Fdcm   = fq;                    %... frequency window
     DCM.options.D      = 1;                         %... downsample
     DCM.options.han    = 1;                         %... apply hanning window
@@ -134,9 +134,21 @@ for i = i;%1:length(Data.Datasets)
     DCM = atcm.fun.prepcsd(DCM);
     DCM.options.DATA = 1 ;
 
+    for is = 1:Ns
+        DCM.xY.y{:}(:,is,is) = DCM.xY.y{:}(:,is,is) ./ max(DCM.xY.y{:}(:,is,is));
+    end
+
+    for is = 1:Ns
+        for js = 1:Ns
+            if is ~= js
+                DCM.xY.y{:}(:,is,js) = DCM.xY.y{:}(:,is,is) .* conj( DCM.xY.y{:}(:,js,js) );
+            end
+        end
+    end
+
     % Gaussian kernel smoothing
-    for is = 1:2
-        for js = 1:2
+    for is = 1:Ns
+        for js = 1:Ns
             DCM.xY.y{:}(:,is,js)  = agauss_smooth(abs(DCM.xY.y{:}(:,is,js)),1);
         end
     end
@@ -168,6 +180,9 @@ for i = i;%1:length(Data.Datasets)
 
     pE.L = [0 0];
     pC.L = [1 1]./8;
+
+    %NEW = load('SurrogateOptEp','Ep')
+    %pE = NEW.Ep;
             
     DCM.M.pE = pE;
     DCM.M.pC = pC;
