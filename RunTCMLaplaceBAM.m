@@ -1,4 +1,4 @@
-function RunTCMLaplaceBAM(i)
+function RunTCMLaplaceBAM(dataset_path)
 % Top level script showing how to apply the thalamo-cortical neural mass
 % model decribed in Shaw et al 2020 NeuroImage, to M/EEG data.
 %
@@ -32,6 +32,22 @@ function RunTCMLaplaceBAM(i)
 % EXAMPLE ONE NODE SETUP:
 %==========================================================================
 
+dataset_struct = dir(dataset_path)
+dataset_list = []
+
+for i=1:length(dataset_struct)
+    name = dataset_struct(i).name
+    folder = dataset_struct(i).folder
+
+    if ~(strcmp(name,'.')) & ~(strcmp(name,'..'))
+        [path, name, ext] = fileparts(name)
+
+        if ext == ".mat"
+            dataset_list = [dataset_list, {fullfile(folder, name)}];
+        end
+    end
+end
+
 % Data & Design
 %--------------------------------------------------------------------------
 %Data.Datasets     = 'NewMeansSZ.txt';%'MeanSZDatasets.txt';%'AllSZNoMerge.txt'; % textfile list of LFP SPM datasets (.txt)
@@ -42,17 +58,18 @@ Data.Design.Ic    = [1 2];          % channel indices
 Data.Design.Sname = {'Frontal' 'Parietal'};  % channel (node) names
 
 Data.Prefix       = 'LM_Laplace_TCM_';      % outputted DCM prefix
-%Data.Datasets     = atcm.fun.ReadDatasets(Data.Datasets);
-Data.Datasets     = {'SPM_LCMV_RestingClean_G112_rest_open_MSV'};
-
+% Data.Datasets     = atcm.fun.ReadDatasets(Data.Datasets);
+% Data.Datasets     = {'./datasets/SPM_LCMV_RestingClean_G112_rest_open_MSV.mat'};
+Data.Datasets     = dataset_list;
+                
 % Model space - T = ns x ns, where 1 = Fwd, 2 = Bkw
 %--------------------------------------------------------------------------
 T = [...
     0 1 ;
     2 0 ];
 
-F = (T==1);
-B = (T==2);
+F = (T==1);      % Forward
+B = (T==2);      % Backward
 C = [1 1]';      % inputs
 L = sparse(2,2); 
 
@@ -61,14 +78,20 @@ L = sparse(2,2);
 
 % Set up, over subjects
 %--------------------------------------------------------------------------
-for i = i;%1:length(Data.Datasets)
-    
+for i = 1:length(Data.Datasets)
+
     % Data Naming & Design Matrix
     %----------------------------------------------------------------------
     DCM          = [];
     [fp fn fe]   = fileparts(Data.Datasets{i});
-    DCM.name     = [Data.Prefix fn fe];
-    
+    DCM.name     = fullfile(fp,[Data.Prefix fn],fe);
+
+
+    if startsWith(fn,Data.Prefix) | exist(DCM.name,'file');
+        fprintf('Skipping model %d/%d - already exists!\n( %s )\n',i,length(Data.Datasets),DCM.name);
+        continue;
+    end
+
     DCM.xY.Dfile = Data.Datasets{i};  % original spm datafile
     Ns           = length(F);         % number of regions / modes
     DCM.xU.X     = Data.Design.X;     % design matrix
@@ -76,13 +99,7 @@ for i = i;%1:length(Data.Datasets)
     tCode        = Data.Design.tCode; % condition index (in SPM)
     DCM.xY.Ic    = Data.Design.Ic;    % channel indices
     DCM.Sname    = Data.Design.Sname; % channel names
-    
-    
-    if exist(DCM.name);
-        fprintf('Skipping model %d/%d - already exists!\n( %s )\n',i,length(Data.Datasets),DCM.name);
-        continue;
-    end
-    
+
     % Extrinsic Connectivity - Model Space
     %----------------------------------------------------------------------
     DCM.A{1} = F;
@@ -94,7 +111,7 @@ for i = i;%1:length(Data.Datasets)
     
     % Function Handles
     %----------------------------------------------------------------------
-    DCM.M.f  = @atcm.tc_hilge2;               % model function handle
+    DCM.M.f  = @atcm.tc_hilge2;              % model function handle
     DCM.M.IS = @atcm.fun.alex_tf;            % Alex integrator/transfer function
     DCM.options.SpecFun = @atcm.fun.Afft;    % fft function for IS
     
@@ -109,14 +126,14 @@ for i = i;%1:length(Data.Datasets)
     %----------------------------------------------------------------------
     DCM.M.U            = sparse(diag(ones(Ns,1)));  %... ignore [modes]
     DCM.options.trials = tCode;                     %... trial code [GroupDataLocs]
-    DCM.options.Tdcm   = [0 2000];                   %... peristimulus time
-    DCM.options.Fdcm   = fq;                    %... frequency window
+    DCM.options.Tdcm   = [0 2000];                  %... peristimulus time
+    DCM.options.Fdcm   = fq;                        %... frequency window
     DCM.options.D      = 1;                         %... downsample
     DCM.options.han    = 1;                         %... apply hanning window
     DCM.options.h      = 4;                         %... number of confounds (DCT)
     DCM.options.DoData = 1;                         %... leave on [custom]
     %DCM.options.baseTdcm   = [-200 0];             %... baseline times [new!]
-    DCM.options.Fltdcm = fq;                    %... bp filter [new!]
+    DCM.options.Fltdcm = fq;                        %... bp filter [new!]
     DCM.options.UseButterband = fq;
 
     DCM.options.analysis      = 'CSD';              %... analyse type
@@ -205,7 +222,7 @@ for i = i;%1:length(Data.Datasets)
     load('init_14dec','x');
     DCM.M.x = spm_unvec(spm_vec(repmat(x,[1 Ns])'),DCM.M.x);
 
-    %x = atcm.fun.alexfixed(DCM.M.pE,DCM.M,1e-10);
+    % x = atcm.fun.alexfixed(DCM.M.pE,DCM.M,1e-10);
     load('bam_2node_tcm_fixedpoint','x')
     DCM.M.x = spm_unvec(x,DCM.M.x);
 
