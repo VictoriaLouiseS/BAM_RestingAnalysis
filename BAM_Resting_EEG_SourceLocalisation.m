@@ -82,8 +82,16 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
 
     % Get the voxel coordinates closest to coordinates of interest using
     % MNI coordinates
-    [~,frontal_ind] = min(cdist(grid.pos,coords(1,:)));
-    [~,parietal_ind] = min(cdist(grid.pos,coords(2,:)));
+    [~,frontal_ind] = mink(cdist(grid.pos,coords(1,:)),5);
+    [~,parietal_ind] = mink(cdist(grid.pos,coords(2,:)),5);
+    
+%     [~,frontal_ind] = min(cdist(grid.pos,coords(1,:)));
+%     [~,parietal_ind] = min(cdist(grid.pos,coords(2,:)));
+%     
+    data_coords.frontal.target = [-12 36 60];
+    data_coords.frontal.coords = grid.pos(frontal_ind,:);
+    data_coords.parietal.target = [-24 -66 66];
+    data_coords.parietal.coords = grid.pos(parietal_ind,:);
 
     clear grid
     clear headmodel
@@ -123,7 +131,7 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
     ftdata.fsample = data_fsample;
     ftdata.time    = data_time;
     ftdata.trial   = {squeeze(triali)};
-    ftdata.label   = {'Frontal'; 'Parietal'};
+    ftdata.coords  = data_coords;
 
     save(outputpath,'ftdata')
 
