@@ -14,7 +14,7 @@ function run_source_localisation(indir,prefix,outdir)
 
     if isfolder(indir)
         % Get files in folder
-        files = dir(indir + "*.mat");
+        files = dir(indir + "/*.mat");
 
         % For each file in folder, call source localisation script
         for i = 1:length(files)
