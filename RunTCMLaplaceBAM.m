@@ -183,8 +183,8 @@ for i = 1:length(Data.Datasets)
     pE=DCM.M.pE;
     pC=DCM.M.pC;
 
-    pC.ID = pC.ID * 0;
-    pC.T  = pC.T *0;
+    pC.ID = pC.ID * 0;         % Delays on each population (conductance delays, from input to output of cell)
+    pC.T  = pC.T + 1/8;        % Time constants
     
     pE.J = pE.J-1000;    
     pE.J(1:8) = log([.6 .8 .4 .6 .4 .6 .4 .4]);
