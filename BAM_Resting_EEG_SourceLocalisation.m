@@ -1,4 +1,4 @@
-function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
+function ftdata = BAM_Resting_EEG_SourceLocalisation(datafile,ncoords)
     % BAM_Resting_EEG_SourceLocalisation    Performs source localisation
     %   Accepts raw EEG datafile input and saves a new file containing
     %   source localised data for the frontal and parietal coordinates.
@@ -77,21 +77,33 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
     cfg.lcmv.keepfilter = 'yes';
     cfg.channel         = data_label;
 
-    % Frontal and parietal MNI coords
+    % Frontal and parietal MNI target coords
     coords = [-12 36 60; -24 -66 66];
 
-    % Get the voxel coordinates closest to coordinates of interest using
-    % MNI coordinates
-    [~,frontal_ind] = mink(cdist(grid.pos,coords(1,:)),5);
-    [~,parietal_ind] = mink(cdist(grid.pos,coords(2,:)),5);
+    if ncoords > 0
+        % Get the voxel coordinates closest to coordinates of interest using
+        % MNI coordinates
+        [~,frontal_ind] = mink(cdist(grid.pos,coords(1,:)),ncoords);
+        [~,parietal_ind] = mink(cdist(grid.pos,coords(2,:)),ncoords);
+        
+        all_ind = [frontal_ind;parietal_ind];
+
+        data_coords.frontal.target = [-12 36 60];
+        data_coords.frontal.coords = grid.pos(frontal_ind,:);
+        data_coords.parietal.target = [-24 -66 66];
+        data_coords.parietal.coords = grid.pos(parietal_ind,:);
+    else
+        % Get all coords
+        all_ind = 1:length(grid.pos);
+        
+        data_coords.all = grid.pos(:,:);
+    end
     
-%     [~,frontal_ind] = min(cdist(grid.pos,coords(1,:)));
-%     [~,parietal_ind] = min(cdist(grid.pos,coords(2,:)));
-%     
-    data_coords.frontal.target = [-12 36 60];
-    data_coords.frontal.coords = grid.pos(frontal_ind,:);
-    data_coords.parietal.target = [-24 -66 66];
-    data_coords.parietal.coords = grid.pos(parietal_ind,:);
+    labels = [];
+    for i=1:length(all_ind)
+        label = strjoin(string(grid.pos(all_ind(i),:)),",");
+        labels = [labels;{label}];
+    end
 
     clear grid
     clear headmodel
@@ -100,13 +112,11 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
     sourceavg=ft_sourceanalysis(cfg, avg);
 
     % Get data from coordinates of interest
-    I = [frontal_ind parietal_ind];
-    VEfilt = cat(3,sourceavg.avg.filter{I});
+%     I = [frontal_ind parietal_ind];
+    VEfilt = cat(3,sourceavg.avg.filter{all_ind});
 
     for ik = 1:size(VEfilt,3)
-
         for i = 1:length(data_trial)
-
             VE3 = squeeze(VEfilt(:,:,ik))*data_trial{i};
 
             C = cov(VE3');
@@ -116,23 +126,24 @@ function BAM_Resting_EEG_SourceLocalisation(datafile,prefix)
 
     end
 
-    % Split datafile path to create output filename
-    [dir, file, ext] = fileparts(datafile);
-    outputfile = [prefix file ext];
-
-    if dir ~= ""
-        outputpath = dir + "/" + outputfile;
-    else
-        outputpath = outputfile;
-    end
+%     % Split datafile path to create output filename
+%     [dir, file, ext] = fileparts(datafile);
+%     outputfile = [prefix file ext];
+% 
+%     if dir ~= ""
+%         outputpath = dir + "/" + outputfile;
+%     else
+%         outputpath = outputfile;
+%     end
 
     % Combine data to save and save to file
     ftdata         = [];
     ftdata.fsample = data_fsample;
     ftdata.time    = data_time;
     ftdata.trial   = {squeeze(triali)};
-    ftdata.coords  = data_coords;
+    ftdata.label   = labels;
+%     ftdata.coords  = data_coords;
 
-    save(outputpath,'ftdata')
+%     save(outputpath,'ftdata')
 
 end
