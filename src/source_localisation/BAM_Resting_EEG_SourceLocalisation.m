@@ -33,6 +33,7 @@ function ftdata = BAM_Resting_EEG_SourceLocalisation(datafile,ncoords)
     cfg.reref         = 'yes';
     cfg.refchannel    = 'all';
     cfg.implicitref   = 'FCz';
+    cfg.bpfreq        = [1 90];
     data_filt_preproc = ft_preprocessing(cfg, data_filt);
 
     % Ensure variables we want to save are kept
