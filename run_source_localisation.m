@@ -1,6 +1,7 @@
 function run_source_localisation(indir,prefix,ncoords,outdir)
     % run   Runs source localisation on single file or files in a folder
     %
+    addpath('./src/source_localisation')
 
     % Have outdir as optional, set default
     if ~exist('outdir', 'var')
@@ -19,6 +20,10 @@ function run_source_localisation(indir,prefix,ncoords,outdir)
         % Call source localisation script
         files = [indir];
     end
+    
+    if ~isfolder(outdir)
+        mkdir(outdir)
+    end 
     
     % For each file in folder, call source localisation script
     for i = 1:length(files)
