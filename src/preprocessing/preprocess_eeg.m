@@ -80,8 +80,11 @@ function [data, data_filt, GoodChans, allart, BadChans, OrigDataset] = preproces
 
     % cfg.latency     = [-0.2 0.350];
     % Is this the manual artifact rejection?
+    % MODIFIED HOW THIS IS BEING DONE, BEFORE IT SEEMED THAT THE
+    % ARTIFACTS WERE NOT BEING REMOVED
     [artifact_sumvar]       = ft_rejectvisual(cfg,data_forsum);
-    artifact_sumvar = artifact_sumvar.cfg.artfctdef.summary.artifact;
+    data_artrej             = artifact_sumvar;
+%     artifact_sumvar = artifact_sumvar.cfg.artfctdef.summary.artifact;
 
     % % % Manual artifact rejection
     % % 
@@ -101,7 +104,7 @@ function [data, data_filt, GoodChans, allart, BadChans, OrigDataset] = preproces
     cfg = [];
     cfg.artfctdef = artifact_sumvar;
     cfg.artfctdef.reject = 'partial';
-    data_kepoch = ft_rejectartifact(cfg, data);
+    data_kepoch = ft_rejectartifact(cfg, data_artrej);
 
     % Select good channels - remember to remove Exeter's dodgy CPz ...
     %--------------------------------------------------------------------
