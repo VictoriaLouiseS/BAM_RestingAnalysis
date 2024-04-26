@@ -48,7 +48,7 @@ function ftdata = BAM_Resting_EEG_SourceLocalisation(datafile,ncoords)
     % Get data covariance matrix and timelocked average
     cfg = [];
     cfg.covariance='yes';
-    cfg.covariancewindow = [0 2];%[-.2 .3];
+%     cfg.covariancewindow = [0 2];%[-.2 .3];
     avg = ft_timelockanalysis(cfg,data_filt_preproc);
 
     clear cfg
@@ -116,15 +116,17 @@ function ftdata = BAM_Resting_EEG_SourceLocalisation(datafile,ncoords)
 %     I = [frontal_ind parietal_ind];
     VEfilt = cat(3,sourceavg.avg.filter{all_ind});
 
-    for ik = 1:size(VEfilt,3)
-        for i = 1:length(data_trial)
+    trials = []
+    for i = 1:length(data_trial)
+        ind_trial = [];
+        for ik = 1:size(VEfilt,3)
             VE3 = squeeze(VEfilt(:,:,ik))*data_trial{i};
 
             C = cov(VE3');
             [u,s,v] = svd(C);
-            triali(ik,i,:) = u(:,1)'*VE3;
+            ind_trial(ik,:) = u(:,1)'*VE3;
         end
-
+        trials = [trials,{ind_trial}];
     end
 
 %     % Split datafile path to create output filename
@@ -141,9 +143,9 @@ function ftdata = BAM_Resting_EEG_SourceLocalisation(datafile,ncoords)
     ftdata         = [];
     ftdata.fsample = data_fsample;
     ftdata.time    = data_time;
-    ftdata.trial   = {squeeze(triali)};
+    ftdata.trial   = {squeeze(trials)};
     ftdata.label   = labels;
-%     ftdata.coords  = data_coords;
+    ftdata.coords  = data_coords;
 
 %     save(outputpath,'ftdata')
 
