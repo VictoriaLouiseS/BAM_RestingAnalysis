@@ -56,9 +56,18 @@ classdef ParticipantData
             parietal_min_idx = frontal_max_idx + 1;
             parietal_max_idx = parietal_min_idx + length(data.coords.parietal) - 1;
             
-            data.(time_idx).(eyes).frontal = ftdata.trial{1}(frontal_min_idx:frontal_max_idx,:);
-            data.(time_idx).(eyes).parietal = ftdata.trial{1}(parietal_min_idx:parietal_max_idx,:);
-            data.(time_idx).(eyes).time = ftdata.time{1};
+            trials = ftdata.trial{1};
+            
+            data.(time_idx).(eyes).frontal = []
+            data.(time_idx).(eyes).parietal = []
+            data.(time_idx).(eyes).time = []
+             
+            
+            for i=1:length(trials)
+                data.(time_idx).(eyes).frontal = [data.(time_idx).(eyes).frontal,ftdata.trial{1}{i}(frontal_min_idx:frontal_max_idx,:)];
+                data.(time_idx).(eyes).parietal = [data.(time_idx).(eyes).parietal,ftdata.trial{1}{i}(parietal_min_idx:parietal_max_idx,:)];
+                data.(time_idx).(eyes).time = [data.(time_idx).(eyes).time,ftdata.time{i}];
+            end
             
             obj.data = data;
         end
