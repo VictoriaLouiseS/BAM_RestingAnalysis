@@ -1,13 +1,27 @@
-function plot_voxel_data(path,outdir)
+function plot_voxel_data(indir,outdir)
     %%% Script to plot source localised voxel data %%%
     addpath src/participants;
     addpath src/participants/tools;
     files = [];
 
-    if isfolder(path)
-        files = dir(path);
-    elseif isfile(path)
-        files = [path];
+    if isfolder(indir)
+        files = dir(indir);
+    elseif isfile(indir)
+        files = [indir];
+    end
+    
+    % Have outdir as optional, set default
+    if ~exist('outdir', 'var')
+        if isfolder(indir)
+            outdir = indir;
+        else
+            [filedir, ~, ~] = fileparts(indir);
+            outdir = filedir;
+        end
+    end
+    
+    if ~isfolder(outdir)
+        mkdir(outdir)
     end
     
     participant_ids = [];
@@ -18,7 +32,7 @@ function plot_voxel_data(path,outdir)
         filepath = files(i).folder;
         [folder name ext] = fileparts(filename);
 
-        if ext == '.mat'
+        if strcmp(ext,'.mat')
             id = get_id(name);
 
             if length(participant_ids) == 0 || ~ismember(id,participant_ids)
